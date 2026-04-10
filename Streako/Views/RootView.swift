@@ -8,17 +8,23 @@
 import SwiftUI
 
 struct RootView: View {
+    @StateObject private var authViewModel = AuthViewModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Streako")
+        Group {
+            if authViewModel.user != nil {
+                HomeView()
+                    .environmentObject(authViewModel)
+            } else {
+                LoginView()
+                    .environmentObject(authViewModel)
+            }
         }
-        .padding()
     }
 }
 
 #Preview {
     RootView()
 }
+
+
