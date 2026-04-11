@@ -41,6 +41,7 @@
 				App/AppDelegate.swift,
 				App/StreakoApp.swift,
 				Assets.xcassets,
+				Extensions/ColorHex.swift,
 				Models/AppUser.swift,
 				Models/Habit.swift,
 				"Resources/GoogleService-Info.plist",

@@ -136,4 +136,17 @@ final class HabitsViewModel: ObservableObject {
             }
         }
     }
+    
+    func updateHabitAppearance(_ habit: Habit, iconName: String, colorHex: String, completion: @escaping () -> Void) {
+        HabitService.shared.updateHabitAppearance(habit, iconName: iconName, colorHex: colorHex) { [weak self] error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.errorMessage = error.localizedDescription
+                } else {
+                    self?.fetchHabits()
+                    completion()
+                }
+            }
+        }
+    }
 }

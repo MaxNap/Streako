@@ -75,7 +75,9 @@ final class HabitService {
             bestStreak: 0,
             lastCompletedDate: nil,
             completedDates: [],
-            isArchived: false
+            isArchived: false,
+            iconName: "flame.fill",
+            colorHex: "#FF9500"
         )
         
         do {
@@ -108,5 +110,16 @@ final class HabitService {
     
     func uncompleteHabit(_ habit: Habit, completion: @escaping (Error?) -> Void) {
         updateHabit(habit, completion: completion)
+    }
+    
+    func updateHabitAppearance(_ habit: Habit, iconName: String, colorHex: String, completion: @escaping (Error?) -> Void) {
+        guard let ref = habitsRef(), let habitId = habit.id else { return }
+        
+        ref.document(habitId).updateData([
+            "iconName": iconName,
+            "colorHex": colorHex
+        ]) { error in
+            completion(error)
+        }
     }
 }

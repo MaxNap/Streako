@@ -17,6 +17,8 @@ struct Habit: Identifiable, Codable {
     var lastCompletedDate: String?
     var completedDates: [String]
     var isArchived: Bool
+    var iconName: String
+    var colorHex: String
     
     var isCompletedToday: Bool {
         lastCompletedDate == Self.dateString(from: Date())
