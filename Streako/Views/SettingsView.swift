@@ -1,0 +1,95 @@
+//
+//  SettingsView.swift
+//  Streako
+//
+//  Created by Maksim Napolskikh on 2026-04-13.
+//
+
+import SwiftUI
+
+struct SettingsView: View {
+    @AppStorage("dailyRemindersEnabled") private var dailyRemindersEnabled = false
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showSignOutAlert = false
+    
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Toggle(isOn: $dailyRemindersEnabled) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Daily Reminders")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                            
+                            Text("Get a reminder every day at 8:00 PM")
+                                .foregroundColor(.gray)
+                                .font(.subheadline)
+                        }
+                    }
+                    .tint(.green)
+                    .onChange(of: dailyRemindersEnabled) { _, newValue in
+                        if newValue {
+                            NotificationManager.shared.requestAuthorization { granted in
+                                if granted {
+                                    NotificationManager.shared.scheduleDailyReminder(hour: 20, minute: 0)
+                                } else {
+                                    DispatchQueue.main.async {
+                                        dailyRemindersEnabled = false
+                                    }
+                                }
+                            }
+                        } else {
+                            NotificationManager.shared.removeDailyReminder()
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                
+                if let user = authViewModel.user {
+                    Text(user.email)
+                        .foregroundColor(.gray)
+                        .font(.subheadline)
+                }
+                
+                Button {
+                    showSignOutAlert = true
+                } label: {
+                    Text("Sign Out")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+                
+                
+                Spacer()
+            }
+            .padding()
+        }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Sign Out", isPresented: $showSignOutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                authViewModel.signOut()
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        SettingsView()
+            .environmentObject(AuthViewModel())
+    }
+}

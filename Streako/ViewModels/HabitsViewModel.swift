@@ -13,6 +13,27 @@ final class HabitsViewModel: ObservableObject {
     @Published var habits: [Habit] = []
     @Published var errorMessage = ""
     
+    var totalHabits: Int {
+        habits.count
+    }
+
+    var completedTodayCount: Int {
+        habits.filter { $0.isCompletedToday }.count
+    }
+
+    var totalCompletions: Int {
+        habits.reduce(0) { $0 + $1.completedDates.count }
+    }
+
+    var bestOverallStreak: Int {
+        habits.map { $0.bestStreak }.max() ?? 0
+    }
+
+    var overallCompletionRate: Double {
+        guard !habits.isEmpty else { return 0 }
+        return Double(completedTodayCount) / Double(habits.count)
+    }
+    
     func fetchHabits() {
         HabitService.shared.fetchHabits { [weak self] result in
             DispatchQueue.main.async {
@@ -26,8 +47,8 @@ final class HabitsViewModel: ObservableObject {
         }
     }
     
-    func addHabit(name: String, completion: @escaping () -> Void) {
-        HabitService.shared.addHabit(name: name) { [weak self] error in
+    func addHabit(name: String, iconName: String, colorHex: String, completion: @escaping () -> Void) {
+        HabitService.shared.addHabit(name: name, iconName: iconName, colorHex: colorHex) { [weak self] error in
             DispatchQueue.main.async {
                 if let error = error {
                     self?.errorMessage = error.localizedDescription

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		179F94E92F87439B002A1D8D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 179F94E82F87439B002A1D8D /* FirebaseAuth */; };
 		179F94EB2F87439B002A1D8D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 179F94EA2F87439B002A1D8D /* FirebaseFirestore */; };
+		17D4D8212F8F2C9800C4EFA9 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 17D4D8202F8F2C9800C4EFA9 /* GoogleSignIn */; };
+		17D4D8232F8F2C9800C4EFA9 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 17D4D8222F8F2C9800C4EFA9 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,22 +41,30 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				App/AppDelegate.swift,
+				App/Extensions/ColorHex.swift,
 				App/StreakoApp.swift,
 				Assets.xcassets,
-				Extensions/ColorHex.swift,
+				Managers/NotificationManager.swift,
 				Models/AppUser.swift,
 				Models/Habit.swift,
 				"Resources/GoogleService-Info.plist",
 				Services/AuthService.swift,
 				Services/HabitService.swift,
+				Utils/Logger.swift,
 				ViewModels/AuthViewModel.swift,
 				ViewModels/HabitsViewModel.swift,
 				Views/AddHabitView.swift,
+				Views/Components/EmptyStateView.swift,
+				Views/Components/HabitCardView.swift,
+				Views/Components/HabitHintView.swift,
+				Views/Components/TodayProgressCardView.swift,
 				Views/HabitDetailView.swift,
 				Views/HomeView.swift,
 				Views/LoginView.swift,
 				Views/RootView.swift,
+				Views/SettingsView.swift,
 				Views/SignUpView.swift,
+				Views/StatsView.swift,
 			);
 			target = 17868D372F86B4E500F20454 /* Streako */;
 		};
@@ -64,6 +74,7 @@
 				App/AppDelegate.swift,
 				App/StreakoApp.swift,
 				Assets.xcassets,
+				Info.plist,
 				"Resources/GoogleService-Info.plist",
 				ViewModels/AuthViewModel.swift,
 				ViewModels/HabitsViewModel.swift,
@@ -72,7 +83,9 @@
 				Views/HomeView.swift,
 				Views/LoginView.swift,
 				Views/RootView.swift,
+				Views/SettingsView.swift,
 				Views/SignUpView.swift,
+				Views/StatsView.swift,
 			);
 			target = 17868D4E2F86B4E700F20454 /* StreakoUITests */;
 		};
@@ -107,6 +120,8 @@
 			files = (
 				179F94E92F87439B002A1D8D /* FirebaseAuth in Frameworks */,
 				179F94EB2F87439B002A1D8D /* FirebaseFirestore in Frameworks */,
+				17D4D8212F8F2C9800C4EFA9 /* GoogleSignIn in Frameworks */,
+				17D4D8232F8F2C9800C4EFA9 /* GoogleSignInSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,6 +181,8 @@
 			packageProductDependencies = (
 				179F94E82F87439B002A1D8D /* FirebaseAuth */,
 				179F94EA2F87439B002A1D8D /* FirebaseFirestore */,
+				17D4D8202F8F2C9800C4EFA9 /* GoogleSignIn */,
+				17D4D8222F8F2C9800C4EFA9 /* GoogleSignInSwift */,
 			);
 			productName = Streako;
 			productReference = 17868D382F86B4E500F20454 /* Streako.app */;
@@ -252,6 +269,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				179F94E72F87439B002A1D8D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				17D4D81F2F8F2C9800C4EFA9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 17868D392F86B4E500F20454 /* Products */;
@@ -458,6 +476,8 @@
 				DEVELOPMENT_TEAM = C8ZKVJM7NM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Streako/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -490,6 +510,8 @@
 				DEVELOPMENT_TEAM = C8ZKVJM7NM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Streako/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -646,6 +668,14 @@
 				minimumVersion = 12.12.0;
 			};
 		};
+		17D4D81F2F8F2C9800C4EFA9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -658,6 +688,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 179F94E72F87439B002A1D8D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		17D4D8202F8F2C9800C4EFA9 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 17D4D81F2F8F2C9800C4EFA9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		17D4D8222F8F2C9800C4EFA9 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 17D4D81F2F8F2C9800C4EFA9 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

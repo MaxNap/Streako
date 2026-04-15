@@ -38,32 +38,32 @@ final class HabitService {
     // MARK: - Fetch Habits
     func fetchHabits(completion: @escaping (Result<[Habit], Error>) -> Void) {
         guard let ref = habitsRef() else {
-            print("❌ habitsRef is nil during fetch")
+            Log.error("habitsRef is nil during fetch")
             return
         }
         
         ref.getDocuments { snapshot, error in
             if let error = error {
-                print("❌ Fetch error: \(error.localizedDescription)")
+                Log.error("Fetch error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
-            print("📦 Documents count: \(snapshot?.documents.count ?? 0)")
+            Log.debug("Documents count: \(snapshot?.documents.count ?? 0)")
             
             let habits = snapshot?.documents.compactMap {
                 try? $0.data(as: Habit.self)
             } ?? []
             
-            print("✅ Decoded habits count: \(habits.count)")
+            print("Decoded habits count: \(habits.count)")
             completion(.success(habits))
         }
     }
     
     // MARK: - Add Habit
-    func addHabit(name: String, completion: @escaping (Error?) -> Void) {
+    func addHabit(name: String, iconName: String, colorHex: String, completion: @escaping (Error?) -> Void) {
         guard let ref = habitsRef() else {
-            print("❌ habitsRef is nil")
+            Log.error("habitsRef is nil")
             return
         }
         
@@ -76,16 +76,16 @@ final class HabitService {
             lastCompletedDate: nil,
             completedDates: [],
             isArchived: false,
-            iconName: "flame.fill",
-            colorHex: "#FF9500"
+            iconName: iconName,
+            colorHex: colorHex
         )
         
         do {
             let docRef = try ref.addDocument(from: habit)
-            print("✅ Habit added with id: \(docRef.documentID)")
+            Log.success("Habit added with id: \(docRef.documentID)")
             completion(nil)
         } catch {
-            print("❌ Error adding habit: \(error.localizedDescription)")
+            Log.error("Error adding habit: \(error.localizedDescription)")
             completion(error)
         }
     }

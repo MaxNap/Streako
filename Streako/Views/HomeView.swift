@@ -11,41 +11,19 @@ struct HomeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var habitsViewModel = HabitsViewModel()
     @State private var showAddHabit = false
+    @AppStorage("hasCompletedFirstHabit") private var hasCompletedFirstHabit = false
+    @State private var firstHabitCompleteButtonFrame: CGRect = .zero
     
     private var completedTodayCount: Int {
         habitsViewModel.habits.filter { $0.isCompletedToday }.count
     }
     
+    
     private var progressSection: some View {
-        HStack(spacing: 12) {
-            ForEach(habitsViewModel.habits.indices, id: \.self) { index in
-                let habit = habitsViewModel.habits[index]
-                
-                Circle()
-                    .strokeBorder(
-                        habit.isCompletedToday ? Color.purple : Color.white.opacity(0.15),
-                        lineWidth: 3
-                    )
-                    .background(
-                        Circle()
-                            .fill(habit.isCompletedToday ? Color.purple.opacity(0.18) : Color.clear)
-                    )
-                    .frame(width: 28, height: 28)
-                    .overlay {
-                        if habit.isCompletedToday {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-            }
-            
-            Spacer()
-            
-            Text("\(completedTodayCount)/\(habitsViewModel.habits.count)")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.white.opacity(0.8))
-        }
+        TodayProgressCardView(
+            completedCount: completedTodayCount,
+            totalCount: habitsViewModel.habits.count
+        )
         .padding(.horizontal)
         .padding(.top, 14)
     }
@@ -61,13 +39,11 @@ struct HomeView: View {
                     progressSection
                     
                     if habitsViewModel.habits.isEmpty {
-                        Spacer()
-                        
-                        Text("No habits yet")
-                            .foregroundColor(.gray)
-                            .font(.headline)
                         
                         Spacer()
+                        EmptyStateView()
+                        Spacer()
+                        
                     } else {
                         ScrollView {
                             VStack(spacing: 14) {
@@ -76,7 +52,21 @@ struct HomeView: View {
                                         HabitDetailView(habitId: habit.id ?? "")
                                             .environmentObject(habitsViewModel)
                                     } label: {
-                                        habitCard(habit)
+                                        HabitCardView(
+                                            habit: habit,
+                                            onComplete: {
+                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                    habitsViewModel.completeHabit(habit)
+                                                }
+                                                
+                                                if !hasCompletedFirstHabit {
+                                                    hasCompletedFirstHabit = true
+                                                }
+                                            },
+                                            onCompleteButtonFrameChange: habitsViewModel.habits.count == 1 ? { frame in
+                                                firstHabitCompleteButtonFrame = frame
+                                            } : nil
+                                        )
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -87,13 +77,26 @@ struct HomeView: View {
                         }
                     }
                 }
+                if habitsViewModel.habits.count == 1 &&
+                    !hasCompletedFirstHabit &&
+                    firstHabitCompleteButtonFrame != .zero {
+                    
+                    HabitHintView()
+                        .position(
+                            x: firstHabitCompleteButtonFrame.midX,
+                            y: firstHabitCompleteButtonFrame.minY + 95
+                        )
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.25), value: hasCompletedFirstHabit)
+                }
             }
+            .coordinateSpace(name: "HomeViewSpace")
             .sheet(isPresented: $showAddHabit) {
                 AddHabitView()
                     .environmentObject(habitsViewModel)
             }
             .onAppear {
-                habitsViewModel.fetchHabits()
+                    habitsViewModel.fetchHabits()
             }
         }
     }
@@ -113,15 +116,40 @@ struct HomeView: View {
                 
                 Spacer()
                 
-                Button {
-                    showAddHabit = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Circle())
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        StatsView()
+                            .environmentObject(habitsViewModel)
+                    } label: {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                    }
+                    
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                    }
+                    
+                    Button {
+                        showAddHabit = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                    }
                 }
             }
             .padding(.horizontal)
@@ -133,68 +161,6 @@ struct HomeView: View {
         }
     }
     
-    private func habitCard(_ habit: Habit) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(width: 54, height: 54)
-                
-                Circle()
-                    .stroke(
-                        habit.isCompletedToday ? Color.purple : Color.white.opacity(0.10),
-                        lineWidth: 3
-                    )
-                    .frame(width: 54, height: 54)
-                
-                Image(systemName: "flame.fill")
-                    .foregroundColor(habit.isCompletedToday ? .purple : .orange)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.name)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                
-                Text("\(habit.currentStreak)-day streak")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.75))
-                
-                Text(habit.isCompletedToday ? "Completed today" : "Not completed today")
-                    .font(.caption)
-                    .foregroundColor(habit.isCompletedToday ? .green : .gray)
-            }
-            
-            Spacer()
-            
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    habitsViewModel.completeHabit(habit)
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(width: 34, height: 34)
-                    
-                    Image(systemName: habit.isCompletedToday ? "checkmark" : "circle")
-                        .scaleEffect(habit.isCompletedToday ? 1.1 : 1.0)
-                        .animation(.easeInOut(duration: 0.2), value: habit.isCompletedToday)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(habit.isCompletedToday ? .white : .gray)
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(habit.isCompletedToday)
-            .opacity(habit.isCompletedToday ? 0.8 : 1.0)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(habit.isCompletedToday ? Color.purple.opacity(0.12) : Color.white.opacity(0.04))
-        )
-    }
     
     private var formattedDate: String {
         let formatter = DateFormatter()
