@@ -36,6 +36,9 @@ struct LoginView: View {
             ZStack {
                 Color.black
                     .ignoresSafeArea()
+                    .onTapGesture {
+                        focusedField = nil
+                    }
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
@@ -54,9 +57,6 @@ struct LoginView: View {
             .navigationDestination(isPresented: $showSignUp) {
                 SignUpView()
                     .environmentObject(authViewModel)
-            }
-            .onTapGesture {
-                focusedField = nil
             }
         }
     }
