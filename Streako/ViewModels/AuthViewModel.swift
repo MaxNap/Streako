@@ -176,7 +176,27 @@ final class AuthViewModel: ObservableObject {
     }
     
     private func mapAuthError(_ error: Error) -> String {
-        if let authErrorCode = AuthErrorCode(rawValue: (error as NSError).code) {
+        // Check for ASAuthorizationError (Apple Sign In specific)
+        let nsError = error as NSError
+        if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" {
+            switch nsError.code {
+            case 1001: // ASAuthorizationError.canceled
+                return "Sign in was cancelled."
+            case 1000: // ASAuthorizationError.unknown
+                return "An unknown error occurred with Apple Sign In."
+            case 1002: // ASAuthorizationError.invalidResponse
+                return "Invalid response from Apple Sign In."
+            case 1003: // ASAuthorizationError.notHandled
+                return "Sign in request was not handled."
+            case 1004: // ASAuthorizationError.failed
+                return "Apple Sign In failed. Please try again."
+            default:
+                return "Apple Sign In error: \(error.localizedDescription)"
+            }
+        }
+        
+        // Check for Firebase Auth errors
+        if let authErrorCode = AuthErrorCode(rawValue: nsError.code) {
             switch authErrorCode {
             case .invalidEmail:
                 return "Please enter a valid email address."
@@ -194,6 +214,10 @@ final class AuthViewModel: ObservableObject {
                 return "Too many attempts. Please try again later."
             case .invalidCredential:
                 return "Invalid login credentials."
+            case .accountExistsWithDifferentCredential:
+                return "An account already exists with the same email but different sign-in method."
+            case .credentialAlreadyInUse:
+                return "This credential is already associated with a different account."
             default:
                 return error.localizedDescription
             }

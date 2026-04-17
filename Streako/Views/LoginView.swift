@@ -224,16 +224,27 @@ struct LoginView: View {
                 onCompletion: { result in
                     switch result {
                     case .success(let authResults):
-                        if let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
-                           let nonce = currentNonce {
-                            
-                            authViewModel.signInWithApple(
-                                credential: appleIDCredential,
-                                nonce: nonce
-                            )
+                        guard let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential else {
+                            authViewModel.errorMessage = "Failed to get Apple ID credential."
+                            return
                         }
                         
+                        guard let nonce = currentNonce else {
+                            authViewModel.errorMessage = "Invalid authentication state."
+                            return
+                        }
+                        
+                        authViewModel.signInWithApple(
+                            credential: appleIDCredential,
+                            nonce: nonce
+                        )
+                        
                     case .failure(let error):
+                        // Don't show error if user cancelled
+                        let nsError = error as NSError
+                        if nsError.code == 1001 { // ASAuthorizationError.canceled
+                            return
+                        }
                         authViewModel.errorMessage = error.localizedDescription
                     }
                 }

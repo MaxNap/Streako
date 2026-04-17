@@ -29,15 +29,16 @@ final class AuthService {
         completion: @escaping (Result<User, Error>) -> Void
     ) {
         guard let appleIDToken = credential.identityToken else {
-            completion(.failure(AuthError.unknown))
+            completion(.failure(AuthError.missingToken))
             return
         }
         
         guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
-            completion(.failure(AuthError.unknown))
+            completion(.failure(AuthError.invalidToken))
             return
         }
         
+        // Create the OAuth provider credential for Apple
         let firebaseCredential = OAuthProvider.appleCredential(
             withIDToken: idTokenString,
             rawNonce: nonce,
@@ -53,6 +54,18 @@ final class AuthService {
             guard let user = result?.user else {
                 completion(.failure(AuthError.unknown))
                 return
+            }
+            
+            // Update the user's display name if this is a new account and we have the full name
+            if let fullName = credential.fullName,
+               let givenName = fullName.givenName,
+               let familyName = fullName.familyName,
+               user.displayName == nil || user.displayName?.isEmpty == true {
+                let changeRequest = user.createProfileChangeRequest()
+                changeRequest.displayName = "\(givenName) \(familyName)"
+                changeRequest.commitChanges { _ in
+                    // Name updated, but we don't need to wait for this
+                }
             }
             
             completion(.success(user))
@@ -187,11 +200,20 @@ final class AuthService {
 
 enum AuthError: LocalizedError {
     case unknown
+    case missingToken
+    case invalidToken
+    case userCancelled
     
     var errorDescription: String? {
         switch self {
         case .unknown:
             return "Something went wrong. Please try again."
+        case .missingToken:
+            return "Failed to get authentication token from Apple."
+        case .invalidToken:
+            return "The authentication token from Apple is invalid."
+        case .userCancelled:
+            return "Sign in was cancelled."
         }
     }
 }
