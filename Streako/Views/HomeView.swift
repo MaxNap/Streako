@@ -12,11 +12,10 @@ struct HomeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var habitsViewModel = HabitsViewModel()
     @State private var showAddHabit = false
-    @AppStorage("hasCompletedFirstHabit") private var hasCompletedFirstHabit = false
-    @State private var firstHabitCompleteButtonFrame: CGRect = .zero
     @State private var habitToUndo: Habit?
     @State private var showUndoAlert = false
-    @AppStorage("hasSeenUndoHint") private var hasSeenUndoHint = false
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
     
     private var completedTodayCount: Int {
         habitsViewModel.habits.filter { $0.isCompletedToday }.count
@@ -60,10 +59,6 @@ struct HomeView: View {
                                             habit: habit,
                                             onComplete: {
                                                 if habit.isCompletedToday {
-                                                    if !hasSeenUndoHint {
-                                                        hasSeenUndoHint = true
-                                                    }
-                                                    
                                                     habitToUndo = habit
                                                     showUndoAlert = true
                                                 } else {
@@ -72,15 +67,9 @@ struct HomeView: View {
                                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                                         habitsViewModel.completeHabit(habit)
                                                     }
-                                                    
-                                                    if !hasCompletedFirstHabit {
-                                                        hasCompletedFirstHabit = true
-                                                    }
                                                 }
                                             },
-                                            onCompleteButtonFrameChange: habitsViewModel.habits.count == 1 ? { frame in
-                                                firstHabitCompleteButtonFrame = frame
-                                            } : nil
+                                            onCompleteButtonFrameChange: nil
                                         )
                                     }
                                     .buttonStyle(.plain)
@@ -92,28 +81,12 @@ struct HomeView: View {
                         }
                     }
                 }
-                if habitsViewModel.habits.count == 1 &&
-                    firstHabitCompleteButtonFrame != .zero {
-                    
-                    if !hasCompletedFirstHabit {
-                        HabitHintView(text: "Tap to complete")
-                            .position(
-                                x: hintXPosition,
-                                y: firstHabitCompleteButtonFrame.minY + 95
-                            )
-                            .transition(.opacity)
-                    }
-                    else if !hasSeenUndoHint {
-                        HabitHintView(
-                            text: "Tap again to undo",
-                            alignTrailingToArrow: isHintNearRightEdge
-                        )
-                        .position(
-                            x: hintXPosition,
-                            y: firstHabitCompleteButtonFrame.minY + 95
-                        )
+                
+                // Onboarding tutorial overlay
+                if showOnboarding {
+                    OnboardingTutorialView(isPresented: $showOnboarding)
                         .transition(.opacity)
-                    }
+                        .zIndex(100)
                 }
             }
             .coordinateSpace(name: "HomeViewSpace")
@@ -134,7 +107,15 @@ struct HomeView: View {
                 Text("Mark \"\(habit.name)\" as not completed for today?")
             }
             .onAppear {
-                    habitsViewModel.fetchHabits()
+                habitsViewModel.fetchHabits()
+                
+                // Show onboarding on first launch
+                if !hasSeenOnboarding {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        showOnboarding = true
+                        hasSeenOnboarding = true
+                    }
+                }
             }
         }
     }
@@ -216,22 +197,6 @@ struct HomeView: View {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.prepare()
         generator.impactOccurred()
-    }
-    
-    private var screenWidth: CGFloat {
-        UIScreen.main.bounds.width
-    }
-
-    private var isHintNearRightEdge: Bool {
-        firstHabitCompleteButtonFrame.midX > screenWidth - 100
-    }
-
-    private var hintXPosition: CGFloat {
-        if isHintNearRightEdge {
-            return screenWidth - 100
-        } else {
-            return firstHabitCompleteButtonFrame.midX
-        }
     }
     
 }

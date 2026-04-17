@@ -10,6 +10,8 @@ import FirebaseAuth
 import UIKit
 import GoogleSignIn
 import FirebaseCore
+import AuthenticationServices
+import CryptoKit
 
 final class AuthService {
     
@@ -19,6 +21,74 @@ final class AuthService {
     
     var currentUser: User? {
         Auth.auth().currentUser
+    }
+    
+    func signInWithApple(
+        credential: ASAuthorizationAppleIDCredential,
+        nonce: String,
+        completion: @escaping (Result<User, Error>) -> Void
+    ) {
+        guard let appleIDToken = credential.identityToken else {
+            completion(.failure(AuthError.unknown))
+            return
+        }
+        
+        guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            completion(.failure(AuthError.unknown))
+            return
+        }
+        
+        let firebaseCredential = OAuthProvider.appleCredential(
+            withIDToken: idTokenString,
+            rawNonce: nonce,
+            fullName: credential.fullName
+        )
+        
+        Auth.auth().signIn(with: firebaseCredential) { result, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let user = result?.user else {
+                completion(.failure(AuthError.unknown))
+                return
+            }
+            
+            completion(.success(user))
+        }
+    }
+    
+     func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        let charset: [Character] =
+        Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        
+        var result = ""
+        var remainingLength = length
+        
+        while remainingLength > 0 {
+            let randoms = (0..<16).map { _ in UInt8.random(in: 0...255) }
+            
+            randoms.forEach { random in
+                if remainingLength == 0 {
+                    return
+                }
+                
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        
+        return result
+    }
+
+     func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
     }
     
     func signUp(email: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {

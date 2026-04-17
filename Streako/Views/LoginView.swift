@@ -6,14 +6,15 @@
 //
 
 import SwiftUI
+import AuthenticationServices
 
 struct LoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var currentNonce: String?
     
     @State private var email = ""
     @State private var password = ""
     @State private var showSignUp = false
-    @State private var showForgotPassword = false
     
     @FocusState private var focusedField: Field?
     
@@ -211,20 +212,36 @@ struct LoginView: View {
     
     private var socialSection: some View {
         VStack(spacing: 12) {
-            Button {
-                // Apple sign in will go here
-            } label: {
-                HStack {
-                    Image(systemName: "applelogo")
-                    Text("Continue with Apple")
+            SignInWithAppleButton(
+                .signIn,
+                onRequest: { request in
+                    authViewModel.clearError()
+                    let nonce = AuthService.shared.randomNonceString()
+                    currentNonce = nonce
+                    request.requestedScopes = [.fullName, .email]
+                    request.nonce = AuthService.shared.sha256(nonce)
+                },
+                onCompletion: { result in
+                    switch result {
+                    case .success(let authResults):
+                        if let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential,
+                           let nonce = currentNonce {
+                            
+                            authViewModel.signInWithApple(
+                                credential: appleIDCredential,
+                                nonce: nonce
+                            )
+                        }
+                        
+                    case .failure(let error):
+                        authViewModel.errorMessage = error.localizedDescription
+                    }
                 }
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.white)
-                .foregroundColor(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
+            )
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 50)
+            .cornerRadius(16)
+            .disabled(authViewModel.isLoading)
             
             Button {
                 authViewModel.signInWithGoogle()
@@ -232,6 +249,7 @@ struct LoginView: View {
                 HStack {
                     Image("google_icon")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20)
                     Text("Continue with Google")
                 }

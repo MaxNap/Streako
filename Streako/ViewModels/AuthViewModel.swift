@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import FirebaseAuth
+import AuthenticationServices
 
 final class AuthViewModel: ObservableObject {
     
@@ -34,6 +35,31 @@ final class AuthViewModel: ObservableObject {
                     self.user = AppUser(
                         uid: firebaseUser.uid,
                         email: firebaseUser.email ?? email
+                    )
+                case .failure(let error):
+                    self.errorMessage = self.mapAuthError(error)
+                }
+            }
+        }
+    }
+    
+    func signInWithApple(
+        credential: ASAuthorizationAppleIDCredential,
+        nonce: String
+    ) {
+        isLoading = true
+        errorMessage = ""
+        
+        AuthService.shared.signInWithApple(credential: credential, nonce: nonce) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isLoading = false
+                
+                switch result {
+                case .success(let firebaseUser):
+                    self.user = AppUser(
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email ?? ""
                     )
                 case .failure(let error):
                     self.errorMessage = self.mapAuthError(error)

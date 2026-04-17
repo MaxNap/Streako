@@ -9,8 +9,10 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("dailyRemindersEnabled") private var dailyRemindersEnabled = false
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSignOutAlert = false
+    @State private var showOnboarding = false
     
     var body: some View {
         ZStack {
@@ -51,6 +53,34 @@ struct SettingsView: View {
                 .background(Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 
+                // Tutorial section
+                VStack(spacing: 0) {
+                    Button {
+                        showOnboarding = true
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("View Tutorial")
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                
+                                Text("Learn how to use Streako")
+                                    .foregroundColor(.gray)
+                                    .font(.subheadline)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "play.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                        }
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                    }
+                }
+                
                 if let user = authViewModel.user {
                     Text(user.email)
                         .foregroundColor(.gray)
@@ -73,6 +103,13 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding()
+            
+            // Onboarding tutorial overlay
+            if showOnboarding {
+                OnboardingTutorialView(isPresented: $showOnboarding)
+                    .transition(.opacity)
+                    .zIndex(100)
+            }
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
