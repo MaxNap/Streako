@@ -48,6 +48,7 @@
 				Models/AppUser.swift,
 				Models/Habit.swift,
 				"Resources/GoogleService-Info.plist",
+				Services/APP_STORE_READINESS_CHECKLIST.md,
 				Services/AuthService.swift,
 				Services/HabitService.swift,
 				Utils/Logger.swift,

@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSignOutAlert = false
+    @State private var showDeleteAccountAlert = false
     @State private var showOnboarding = false
     
     var body: some View {
@@ -99,6 +100,17 @@ struct SettingsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
                 
+                Button {
+                    showDeleteAccountAlert = true
+                } label: {
+                    Text("Delete Account")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
                 
                 Spacer()
             }
@@ -120,6 +132,19 @@ struct SettingsView: View {
             }
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+        .alert("Delete Account", isPresented: $showDeleteAccountAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                authViewModel.deleteAccount { success in
+                    if !success {
+                        // Error is already shown in authViewModel.errorMessage
+                        // You could show an additional alert here if needed
+                    }
+                }
+            }
+        } message: {
+            Text("This will permanently delete your account and all associated data. This action cannot be undone.")
         }
     }
 }

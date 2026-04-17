@@ -106,6 +106,10 @@ final class AuthViewModel: ObservableObject {
                         email: firebaseUser.email ?? ""
                     )
                 case .failure(let error):
+                    // Don't show error if user cancelled
+                    if let authError = error as? AuthError, authError == .userCancelled {
+                        return
+                    }
                     self.errorMessage = self.mapAuthError(error)
                 }
             }
@@ -153,6 +157,28 @@ final class AuthViewModel: ObservableObject {
             errorMessage = ""
         } catch {
             errorMessage = mapAuthError(error)
+        }
+    }
+    
+    func deleteAccount(completion: @escaping (Bool) -> Void) {
+        isLoading = true
+        errorMessage = ""
+        
+        AuthService.shared.deleteAccount { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isLoading = false
+                
+                switch result {
+                case .success:
+                    self.user = nil
+                    self.errorMessage = ""
+                    completion(true)
+                case .failure(let error):
+                    self.errorMessage = self.mapAuthError(error)
+                    completion(false)
+                }
+            }
         }
     }
     

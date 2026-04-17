@@ -65,6 +65,7 @@ struct SignUpView: View {
                     formSection
                     actionSection
                     signInSection
+                    privacyPolicySection
                 }
                 .padding()
                 .padding(.top, 40)
@@ -225,6 +226,18 @@ struct SignUpView: View {
         .padding()
         .background(Color.red.opacity(0.10))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+    
+    private var privacyPolicySection: some View {
+        Button {
+            if let url = URL(string: "https://www.freeprivacypolicy.com/live/f37a4b2c-7e9b-41dc-b216-81f9c0f7c322") {
+                UIApplication.shared.open(url)
+            }
+        } label: {
+            Text("Privacy Policy")
+                .font(.caption)
+                .foregroundColor(.gray.opacity(0.7))
+        }
     }
     
     private func submitSignUp() {

@@ -48,6 +48,7 @@ struct LoginView: View {
                         dividerSection
                         socialSection
                         signUpSection
+                        privacyPolicySection
                     }
                     .padding()
                     .padding(.top, 40)
@@ -257,16 +258,16 @@ struct LoginView: View {
             Button {
                 authViewModel.signInWithGoogle()
             } label: {
-                HStack {
+                HStack(spacing: 9) {
                     Image("google_icon")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                     Text("Continue with Google")
+                        .font(.headline)
                 }
-                .font(.headline)
                 .frame(maxWidth: .infinity)
-                .padding()
+                .frame(height: 50)
                 .background(Color.white.opacity(0.06))
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -288,6 +289,18 @@ struct LoginView: View {
         }
         .font(.footnote)
         .padding(.top, 4)
+    }
+    
+    private var privacyPolicySection: some View {
+        Button {
+            if let url = URL(string: "https://www.freeprivacypolicy.com/live/f37a4b2c-7e9b-41dc-b216-81f9c0f7c322") {
+                UIApplication.shared.open(url)
+            }
+        } label: {
+            Text("Privacy Policy")
+                .font(.caption)
+                .foregroundColor(.gray.opacity(0.7))
+        }
     }
     
     private func submitLogin() {
