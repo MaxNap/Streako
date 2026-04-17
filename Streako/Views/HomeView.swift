@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -13,6 +14,9 @@ struct HomeView: View {
     @State private var showAddHabit = false
     @AppStorage("hasCompletedFirstHabit") private var hasCompletedFirstHabit = false
     @State private var firstHabitCompleteButtonFrame: CGRect = .zero
+    @State private var habitToUndo: Habit?
+    @State private var showUndoAlert = false
+    @AppStorage("hasSeenUndoHint") private var hasSeenUndoHint = false
     
     private var completedTodayCount: Int {
         habitsViewModel.habits.filter { $0.isCompletedToday }.count
@@ -55,12 +59,23 @@ struct HomeView: View {
                                         HabitCardView(
                                             habit: habit,
                                             onComplete: {
-                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                    habitsViewModel.completeHabit(habit)
-                                                }
-                                                
-                                                if !hasCompletedFirstHabit {
-                                                    hasCompletedFirstHabit = true
+                                                if habit.isCompletedToday {
+                                                    if !hasSeenUndoHint {
+                                                        hasSeenUndoHint = true
+                                                    }
+                                                    
+                                                    habitToUndo = habit
+                                                    showUndoAlert = true
+                                                } else {
+                                                    triggerSuccessHaptic()
+
+                                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                        habitsViewModel.completeHabit(habit)
+                                                    }
+                                                    
+                                                    if !hasCompletedFirstHabit {
+                                                        hasCompletedFirstHabit = true
+                                                    }
                                                 }
                                             },
                                             onCompleteButtonFrameChange: habitsViewModel.habits.count == 1 ? { frame in
@@ -78,22 +93,45 @@ struct HomeView: View {
                     }
                 }
                 if habitsViewModel.habits.count == 1 &&
-                    !hasCompletedFirstHabit &&
                     firstHabitCompleteButtonFrame != .zero {
                     
-                    HabitHintView()
+                    if !hasCompletedFirstHabit {
+                        HabitHintView(text: "Tap to complete")
+                            .position(
+                                x: hintXPosition,
+                                y: firstHabitCompleteButtonFrame.minY + 95
+                            )
+                            .transition(.opacity)
+                    }
+                    else if !hasSeenUndoHint {
+                        HabitHintView(
+                            text: "Tap again to undo",
+                            alignTrailingToArrow: isHintNearRightEdge
+                        )
                         .position(
-                            x: firstHabitCompleteButtonFrame.midX,
+                            x: hintXPosition,
                             y: firstHabitCompleteButtonFrame.minY + 95
                         )
                         .transition(.opacity)
-                        .animation(.easeInOut(duration: 0.25), value: hasCompletedFirstHabit)
+                    }
                 }
             }
             .coordinateSpace(name: "HomeViewSpace")
             .sheet(isPresented: $showAddHabit) {
                 AddHabitView()
                     .environmentObject(habitsViewModel)
+            }
+            .alert("Undo completion?", isPresented: $showUndoAlert, presenting: habitToUndo) { habit in
+                Button("Cancel", role: .cancel) { }
+                Button("Undo", role: .destructive) {
+                    triggerUndoHaptic()
+                    
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        habitsViewModel.uncompleteHabit(habit)
+                    }
+                }
+            } message: { habit in
+                Text("Mark \"\(habit.name)\" as not completed for today?")
             }
             .onAppear {
                     habitsViewModel.fetchHabits()
@@ -167,6 +205,35 @@ struct HomeView: View {
         formatter.dateFormat = "EEEE, d MMMM"
         return formatter.string(from: Date())
     }
+    
+    private func triggerSuccessHaptic() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(.success)
+    }
+
+    private func triggerUndoHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+    
+    private var screenWidth: CGFloat {
+        UIScreen.main.bounds.width
+    }
+
+    private var isHintNearRightEdge: Bool {
+        firstHabitCompleteButtonFrame.midX > screenWidth - 100
+    }
+
+    private var hintXPosition: CGFloat {
+        if isHintNearRightEdge {
+            return screenWidth - 100
+        } else {
+            return firstHabitCompleteButtonFrame.midX
+        }
+    }
+    
 }
 
 #Preview {

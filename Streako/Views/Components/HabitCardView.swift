@@ -12,6 +12,9 @@ struct HabitCardView: View {
     let onComplete: () -> Void
     let onCompleteButtonFrameChange: ((CGRect) -> Void)?
     
+    @State private var isPressed = false
+    @State private var animatePulse = false
+    
     init(
         habit: Habit,
         onComplete: @escaping () -> Void,
@@ -57,9 +60,30 @@ struct HabitCardView: View {
             Spacer()
             
             Button {
+                isPressed = true
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    isPressed = false
+                }
+                
+                if !habit.isCompletedToday {
+                    animatePulse = true
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        animatePulse = false
+                    }
+                }
+                
                 onComplete()
             } label: {
                 ZStack {
+                    Circle()
+                        .stroke(Color(hex: habit.colorHex).opacity(0.6), lineWidth: 2)
+                        .frame(width: 34, height: 34)
+                        .scaleEffect(animatePulse ? 1.8 : 1.0)
+                        .opacity(animatePulse ? 0 : 1)
+                        .animation(.easeOut(duration: 0.35), value: animatePulse)
+                    
                     Circle()
                         .fill(Color.white.opacity(0.08))
                         .frame(width: 34, height: 34)
@@ -70,6 +94,8 @@ struct HabitCardView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(habit.isCompletedToday ? .white : .gray)
                 }
+                .scaleEffect(isPressed ? 0.86 : 1.0)
+                .animation(.spring(response: 0.18, dampingFraction: 0.55), value: isPressed)
             }
             .background(
                 GeometryReader { geometry in
@@ -83,14 +109,16 @@ struct HabitCardView: View {
                 }
             )
             .buttonStyle(.plain)
-            .disabled(habit.isCompletedToday)
-            .opacity(habit.isCompletedToday ? 0.8 : 1.0)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(habit.isCompletedToday ? Color(hex: habit.colorHex).opacity(0.12) : Color.white.opacity(0.04))
+                .fill(
+                    habit.isCompletedToday
+                    ? Color(hex: habit.colorHex).opacity(0.12)
+                    : Color.white.opacity(0.04)
+                )
         )
     }
 }

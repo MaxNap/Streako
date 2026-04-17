@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct HabitHintView: View {
+    let text: String
+    var alignTrailingToArrow: Bool = false
+    
     @State private var animateArrow = false
     
     var body: some View {
@@ -17,19 +20,18 @@ struct HabitHintView: View {
                 .foregroundColor(.white.opacity(0.85))
                 .offset(y: animateArrow ? -6 : 0)
                 .shadow(color: .white.opacity(0.2), radius: 4)
+                .frame(maxWidth: .infinity, alignment: alignTrailingToArrow ? .trailing : .center)
             
-            HStack(spacing: 4) {
-                Text("Tap")
-                Image(systemName: "circle")
-                Text("to complete")
-            }
-            .font(.footnote.weight(.medium))
-            .foregroundColor(.white.opacity(0.85))
+            Text(text)
+                .font(.footnote.weight(.medium))
+                .foregroundColor(.white.opacity(0.85))
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.35))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.35))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .frame(maxWidth: 170, alignment: alignTrailingToArrow ? .trailing : .center)
         .onAppear {
             animateArrow = true
         }
@@ -40,9 +42,16 @@ struct HabitHintView: View {
     }
 }
 
-#Preview {
+#Preview("Complete Hint") {
     ZStack {
         Color.black.ignoresSafeArea()
-        HabitHintView()
+        HabitHintView(text: "Tap to complete")
+    }
+}
+
+#Preview("Undo Hint") {
+    ZStack {
+        Color.black.ignoresSafeArea()
+        HabitHintView(text: "Tap again to undo", alignTrailingToArrow: true)
     }
 }

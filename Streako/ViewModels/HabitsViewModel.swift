@@ -138,14 +138,11 @@ final class HabitsViewModel: ObservableObject {
         let todayString = Habit.dateString(from: Date())
         
         updatedHabit.completedDates.removeAll { $0 == todayString }
-        updatedHabit.lastCompletedDate = updatedHabit.completedDates.sorted().last
         
-        if updatedHabit.completedDates.isEmpty {
-            updatedHabit.currentStreak = 0
-            updatedHabit.bestStreak = max(updatedHabit.bestStreak, 0)
-        } else {
-            updatedHabit.currentStreak = updatedHabit.completedDates.count
-        }
+        let sortedDates = updatedHabit.completedDates.sorted()
+        updatedHabit.lastCompletedDate = sortedDates.last
+        
+        updatedHabit.currentStreak = calculateCurrentStreak(from: sortedDates)
         
         HabitService.shared.uncompleteHabit(updatedHabit) { [weak self] error in
             DispatchQueue.main.async {
@@ -156,6 +153,31 @@ final class HabitsViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func calculateCurrentStreak(from sortedDateStrings: [String]) -> Int {
+        guard !sortedDateStrings.isEmpty else { return 0 }
+        
+        let calendar = Calendar.current
+        let dates = sortedDateStrings.compactMap { Self.dateFormatter.date(from: $0) }.sorted()
+        
+        guard var streakDate = dates.last else { return 0 }
+        var streak = 1
+        
+        for date in dates.dropLast().reversed() {
+            guard let expectedPrevious = calendar.date(byAdding: .day, value: -1, to: streakDate) else {
+                break
+            }
+            
+            if calendar.isDate(date, inSameDayAs: expectedPrevious) {
+                streak += 1
+                streakDate = date
+            } else {
+                break
+            }
+        }
+        
+        return streak
     }
     
     func updateHabitAppearance(_ habit: Habit, iconName: String, colorHex: String, completion: @escaping () -> Void) {
