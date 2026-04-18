@@ -31,7 +31,7 @@ struct WeeklyProgressView: View {
                         
                         // Circle indicator
                         Button {
-                            if !day.isFuture && day.isCompleted {
+                            if !day.isFuture {
                                 selectedDay = day
                                 showDayHabits = true
                             }
@@ -65,7 +65,7 @@ struct WeeklyProgressView: View {
                                 }
                             }
                         }
-                        .disabled(!day.isCompleted || day.isFuture)
+                        .disabled(day.isFuture)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -83,11 +83,13 @@ struct WeeklyProgressView: View {
             }
         )
         .sheet(isPresented: $showDayHabits) {
-            if let selectedDay = selectedDay {
+            if let day = selectedDay {
                 DayHabitsSheet(
-                    date: selectedDay.date,
+                    date: day.date,
                     habits: habits
                 )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
         }
         .onAppear {
@@ -149,13 +151,21 @@ extension WeeklyProgressView {
             let date = calendar.date(byAdding: .day, value: index, to: startOfWeek)!
             let isToday = calendar.isDate(date, inSameDayAs: today)
             let isFuture = date > today
-            let isCompleted = completedDays.contains { calendar.isDate($0, inSameDayAs: date) }
+            
+            // Check if ALL habits are completed on this day
+            var isCompleted = false
+            if !isFuture && !habits.isEmpty {
+                // A day is complete only if ALL habits are completed
+                isCompleted = habits.allSatisfy { habit in
+                    habit.isCompletedOn(date: date)
+                }
+            }
             
             return DayProgress(
                 dayLetter: dayLetters[index],
                 date: date,
                 isToday: isToday,
-                isCompleted: isCompleted && !isFuture,
+                isCompleted: isCompleted,
                 isFuture: isFuture
             )
         }

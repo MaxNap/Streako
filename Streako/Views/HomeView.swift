@@ -46,34 +46,18 @@ struct HomeView: View {
         return allCompletedDates.count
     }
     
-    private var completedDaysThisWeek: Set<Date> {
-        // Get all dates where at least one habit was completed this week
-        var dates = Set<Date>()
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Get start of week (Monday)
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
-        let startOfWeek = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
-        
+    private var allCompletedDatesSet: Set<String> {
+        var allDates = Set<String>()
         for habit in habitsViewModel.habits {
-            for i in 0..<7 {
-                let date = calendar.date(byAdding: .day, value: i, to: startOfWeek)!
-                if habit.isCompletedOn(date: date) {
-                    dates.insert(calendar.startOfDay(for: date))
-                }
-            }
+            allDates.formUnion(habit.completedDates)
         }
-        
-        return dates
+        return allDates
     }
-    
     
     private var weeklyProgressSection: some View {
         WeeklyProgressView(
             weekData: WeeklyProgressView.getCurrentWeekData(
-                completedDays: completedDaysThisWeek,
+                completedDays: Set(), // Not needed anymore
                 habits: habitsViewModel.habits
             ),
             habits: habitsViewModel.habits
@@ -151,7 +135,7 @@ struct HomeView: View {
                     OnboardingTutorialView(isPresented: $showOnboarding)
                         .transition(.opacity)
                         .zIndex(100)
-                }
+                 }
             }
             .coordinateSpace(name: "HomeViewSpace")
             .sheet(isPresented: $showAddHabit) {
@@ -160,9 +144,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showMonthlyCalendar) {
                 MonthlyCalendarView(
-                    completedDates: Set(
-                        habitsViewModel.habits.flatMap { $0.completedDates }
-                    )
+                    completedDates: allCompletedDatesSet
                 )
             }
             .alert("Undo completion?", isPresented: $showUndoAlert, presenting: habitToUndo) { habit in
