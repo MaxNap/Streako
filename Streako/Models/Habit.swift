@@ -24,6 +24,11 @@ struct Habit: Identifiable, Codable {
         lastCompletedDate == Self.dateString(from: Date())
     }
     
+    func isCompletedOn(date: Date) -> Bool {
+        let dateStr = Self.dateString(from: date)
+        return completedDates.contains(dateStr)
+    }
+    
     static func dateString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"

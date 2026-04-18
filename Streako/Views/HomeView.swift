@@ -16,19 +16,79 @@ struct HomeView: View {
     @State private var showUndoAlert = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var showOnboarding = false
+    @State private var showMonthlyCalendar = false
     
     private var completedTodayCount: Int {
         habitsViewModel.habits.filter { $0.isCompletedToday }.count
     }
     
+    private var completionRate: Int {
+        guard !habitsViewModel.habits.isEmpty else { return 0 }
+        return Int((Double(completedTodayCount) / Double(habitsViewModel.habits.count)) * 100)
+    }
     
-    private var progressSection: some View {
-        TodayProgressCardView(
-            completedCount: completedTodayCount,
-            totalCount: habitsViewModel.habits.count
+    private var currentStreak: Int {
+        // Calculate the best current streak across all habits
+        habitsViewModel.habits.map { $0.currentStreak }.max() ?? 0
+    }
+    
+    private var totalHabitsCompleted: Int {
+        // Total number of habit completions across all habits
+        habitsViewModel.habits.reduce(0) { $0 + $1.completedDates.count }
+    }
+    
+    private var totalDaysActive: Int {
+        // Count unique days where at least one habit was completed
+        var allCompletedDates = Set<String>()
+        for habit in habitsViewModel.habits {
+            allCompletedDates.formUnion(habit.completedDates)
+        }
+        return allCompletedDates.count
+    }
+    
+    private var completedDaysThisWeek: Set<Date> {
+        // Get all dates where at least one habit was completed this week
+        var dates = Set<Date>()
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Get start of week (Monday)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
+        let startOfWeek = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
+        
+        for habit in habitsViewModel.habits {
+            for i in 0..<7 {
+                let date = calendar.date(byAdding: .day, value: i, to: startOfWeek)!
+                if habit.isCompletedOn(date: date) {
+                    dates.insert(calendar.startOfDay(for: date))
+                }
+            }
+        }
+        
+        return dates
+    }
+    
+    
+    private var weeklyProgressSection: some View {
+        WeeklyProgressView(
+            weekData: WeeklyProgressView.getCurrentWeekData(
+                completedDays: completedDaysThisWeek,
+                habits: habitsViewModel.habits
+            ),
+            habits: habitsViewModel.habits
         )
         .padding(.horizontal)
-        .padding(.top, 14)
+        .padding(.top, 8)
+    }
+    
+    private var quickStatsSection: some View {
+        QuickStatsView(
+            completionRate: completionRate,
+            currentStreak: currentStreak,
+            totalValue: totalDaysActive
+        )
+        .padding(.top, 16)
     }
     
     var body: some View {
@@ -39,7 +99,7 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     headerSection
-                    progressSection
+                    weeklyProgressSection
                     
                     if habitsViewModel.habits.isEmpty {
                         
@@ -49,7 +109,11 @@ struct HomeView: View {
                         
                     } else {
                         ScrollView {
-                            VStack(spacing: 14) {
+                            VStack(spacing: 16) {
+                                // Quick stats
+                                quickStatsSection
+                                
+                                // Habits list
                                 ForEach(habitsViewModel.habits) { habit in
                                     NavigationLink {
                                         HabitDetailView(habitId: habit.id ?? "")
@@ -76,7 +140,7 @@ struct HomeView: View {
                                 }
                             }
                             .padding(.horizontal)
-                            .padding(.top, 16)
+                            .padding(.top, 8)
                             .padding(.bottom, 30)
                         }
                     }
@@ -93,6 +157,13 @@ struct HomeView: View {
             .sheet(isPresented: $showAddHabit) {
                 AddHabitView()
                     .environmentObject(habitsViewModel)
+            }
+            .sheet(isPresented: $showMonthlyCalendar) {
+                MonthlyCalendarView(
+                    completedDates: Set(
+                        habitsViewModel.habits.flatMap { $0.completedDates }
+                    )
+                )
             }
             .alert("Undo completion?", isPresented: $showUndoAlert, presenting: habitToUndo) { habit in
                 Button("Cancel", role: .cancel) { }
@@ -121,70 +192,80 @@ struct HomeView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Today")
-                        .font(.system(size: 34, weight: .bold))
+                // Left: Add Habit button
+                Button {
+                    showAddHabit = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.white)
-                    
-                    Text(formattedDate)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .frame(width: 44, height: 44)
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 12) {
-                    NavigationLink {
-                        StatsView()
-                            .environmentObject(habitsViewModel)
-                    } label: {
-                        Image(systemName: "chart.bar.fill")
-                            .font(.title3)
+                // Center: Today title and date (tappable for calendar)
+                Button {
+                    showMonthlyCalendar = true
+                } label: {
+                    VStack(spacing: 2) {
+                        Text("Today")
+                            .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Circle())
-                    }
-                    
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.title3)
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Circle())
-                    }
-                    
-                    Button {
-                        showAddHabit = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Circle())
+                        
+                        HStack(spacing: 4) {
+                            Text(formattedDate)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.gray)
+                            
+                            Image(systemName: "calendar")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.gray.opacity(0.6))
+                        }
                     }
                 }
+                
+                Spacer()
+                
+                // Right: Settings button
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                }
             }
-            .padding(.horizontal)
-            .padding(.top, 12)
-            
-            Divider()
-                .background(Color.white.opacity(0.08))
-                .padding(.top, 12)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 16)
         }
     }
     
     
     private var formattedDate: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: Date())
+        formatter.dateFormat = "EEEE d MMMM" // e.g., "Friday 18th April"
+        let dateString = formatter.string(from: Date())
+        
+        // Add ordinal suffix (1st, 2nd, 3rd, etc.)
+        let day = Calendar.current.component(.day, from: Date())
+        let suffix: String
+        switch day {
+        case 1, 21, 31: suffix = "st"
+        case 2, 22: suffix = "nd"
+        case 3, 23: suffix = "rd"
+        default: suffix = "th"
+        }
+        
+        // Replace day number with number + suffix
+        return dateString.replacingOccurrences(
+            of: " \(day) ",
+            with: " \(day)\(suffix) "
+        )
     }
     
     private func triggerSuccessHaptic() {
