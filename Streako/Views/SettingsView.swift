@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("dailyRemindersEnabled") private var dailyRemindersEnabled = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var habitsViewModel: HabitsViewModel
     @State private var showSignOutAlert = false
     @State private var showDeleteAccountAlert = false
     @State private var showOnboarding = false
@@ -81,6 +82,35 @@ struct SettingsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
                 }
+                
+                // Test Data Generator (for development/testing only)
+                #if DEBUG
+                NavigationLink {
+                    TestDataView()
+                        .environmentObject(habitsViewModel)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("🧪 Test Data Generator")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                            
+                            Text("Populate app with sample data")
+                                .foregroundColor(.gray)
+                                .font(.subheadline)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "flask.fill")
+                            .font(.title2)
+                            .foregroundColor(.purple)
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+                #endif
                 
                 if let user = authViewModel.user {
                     Text(user.email)

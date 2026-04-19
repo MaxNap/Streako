@@ -12,6 +12,7 @@ struct HomeView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var habitsViewModel = HabitsViewModel()
     @State private var showAddHabit = false
+    @State private var showHabitLimitAlert = false
     @State private var habitToUndo: Habit?
     @State private var showUndoAlert = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
@@ -144,7 +145,8 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showMonthlyCalendar) {
                 MonthlyCalendarView(
-                    completedDates: allCompletedDatesSet
+                    completedDates: allCompletedDatesSet,
+                    habits: habitsViewModel.habits
                 )
             }
             .alert("Undo completion?", isPresented: $showUndoAlert, presenting: habitToUndo) { habit in
@@ -158,6 +160,11 @@ struct HomeView: View {
                 }
             } message: { habit in
                 Text("Mark \"\(habit.name)\" as not completed for today?")
+            }
+            .alert("Habit Limit Reached", isPresented: $showHabitLimitAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You've reached the maximum of 20 habits. Consider archiving or deleting old habits to add new ones.")
             }
             .onAppear {
                 habitsViewModel.fetchHabits()
@@ -178,7 +185,11 @@ struct HomeView: View {
             HStack {
                 // Left: Add Habit button
                 Button {
-                    showAddHabit = true
+                    if habitsViewModel.habits.count >= 20 {
+                        showHabitLimitAlert = true
+                    } else {
+                        showAddHabit = true
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 20, weight: .semibold))
@@ -214,6 +225,7 @@ struct HomeView: View {
                 // Right: Settings button
                 NavigationLink {
                     SettingsView()
+                        .environmentObject(habitsViewModel)
                 } label: {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 20, weight: .semibold))

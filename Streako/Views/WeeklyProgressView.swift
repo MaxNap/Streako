@@ -31,7 +31,7 @@ struct WeeklyProgressView: View {
                         
                         // Circle indicator
                         Button {
-                            if !day.isFuture {
+                            if !day.isFuture && day.isCompleted {
                                 selectedDay = day
                                 showDayHabits = true
                             }
@@ -65,7 +65,7 @@ struct WeeklyProgressView: View {
                                 }
                             }
                         }
-                        .disabled(day.isFuture)
+                        .disabled(!day.isCompleted || day.isFuture)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -83,13 +83,11 @@ struct WeeklyProgressView: View {
             }
         )
         .sheet(isPresented: $showDayHabits) {
-            if let day = selectedDay {
+            if let selectedDay = selectedDay {
                 DayHabitsSheet(
-                    date: day.date,
+                    date: selectedDay.date,
                     habits: habits
                 )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
             }
         }
         .onAppear {
@@ -152,12 +150,19 @@ extension WeeklyProgressView {
             let isToday = calendar.isDate(date, inSameDayAs: today)
             let isFuture = date > today
             
-            // Check if ALL habits are completed on this day
+            // Check if ALL habits that existed on this day are completed
             var isCompleted = false
             if !isFuture && !habits.isEmpty {
-                // A day is complete only if ALL habits are completed
-                isCompleted = habits.allSatisfy { habit in
-                    habit.isCompletedOn(date: date)
+                // Filter habits that existed on this date
+                let existingHabits = habits.filter { habit in
+                    calendar.startOfDay(for: habit.createdAt) <= calendar.startOfDay(for: date)
+                }
+                
+                // A day is complete only if there were habits AND all of them are completed
+                if !existingHabits.isEmpty {
+                    isCompleted = existingHabits.allSatisfy { habit in
+                        habit.isCompletedOn(date: date)
+                    }
                 }
             }
             

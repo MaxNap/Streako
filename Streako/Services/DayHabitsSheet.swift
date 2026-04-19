@@ -13,10 +13,15 @@ struct DayHabitsSheet: View {
     let habits: [Habit]
     
     private var allHabitsOnDate: [(habit: Habit, isCompleted: Bool)] {
-        // Show ALL habits, marking which ones were completed
-        habits.map { habit in
-            (habit: habit, isCompleted: habit.isCompletedOn(date: date))
-        }
+        // Only show habits that existed on this date
+        habits
+            .filter { habit in
+                // Check if habit was created before or on this date
+                Calendar.current.startOfDay(for: habit.createdAt) <= Calendar.current.startOfDay(for: date)
+            }
+            .map { habit in
+                (habit: habit, isCompleted: habit.isCompletedOn(date: date))
+            }
     }
     
     private var completedCount: Int {
@@ -36,95 +41,82 @@ struct DayHabitsSheet: View {
     }
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 8) {
+                    Text(dayLetter)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.gray)
+                    
+                    Text(dateString)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                    
+                    // Progress indicator
+                    Text("\(completedCount) of \(allHabitsOnDate.count) habits completed")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+                .padding(.top, 24)
                 
-                VStack(spacing: 24) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text(dayLetter)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.gray)
+                // All habits
+                if habits.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "tray")
+                            .font(.system(size: 48))
+                            .foregroundColor(.gray.opacity(0.5))
                         
-                        Text(dateString)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        // Progress indicator
-                        Text("\(completedCount) of \(habits.count) habits completed")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.top, 8)
-                    
-                    // All habits
-                    if habits.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "tray")
-                                .font(.system(size: 48))
-                                .foregroundColor(.gray.opacity(0.5))
-                            
-                            Text("No habits yet")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                            
-                            Text("Create your first habit to start tracking")
-                                .font(.subheadline)
-                                .foregroundColor(.gray.opacity(0.7))
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxHeight: .infinity)
-                    } else {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("All Habits")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal)
-                            
-                            ScrollView {
-                                VStack(spacing: 12) {
-                                    ForEach(allHabitsOnDate, id: \.habit.id) { item in
-                                        HabitCompletionRow(
-                                            habit: item.habit,
-                                            isCompleted: item.isCompleted
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal)
-                            }
-                        }
-                    }
-                    
-                    // Close button
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Close")
+                        Text("No habits yet")
                             .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                }
-                .padding()
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.gray)
+                        
+                        Text("Create your first habit to start tracking")
+                            .font(.subheadline)
+                            .foregroundColor(.gray.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("All Habits")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal)
+                        
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                ForEach(allHabitsOnDate, id: \.habit.id) { item in
+                                    HabitCompletionRow(
+                                        habit: item.habit,
+                                        isCompleted: item.isCompleted
+                                    )
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
                     }
                 }
+                
+                // Close button
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Close")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
             }
+            .padding()
         }
     }
 }

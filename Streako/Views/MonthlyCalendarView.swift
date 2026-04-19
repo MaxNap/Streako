@@ -10,7 +10,10 @@ import SwiftUI
 struct MonthlyCalendarView: View {
     @Environment(\.dismiss) private var dismiss
     let completedDates: Set<String>
+    let habits: [Habit]
     @State private var selectedMonth: Date = Date()
+    @State private var selectedDate: Date?
+    @State private var showDayHabits = false
     
     private let calendar = Calendar.current
     private let daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"]
@@ -42,6 +45,15 @@ struct MonthlyCalendarView: View {
                         dismiss()
                     }
                     .foregroundColor(.white)
+                }
+            }
+            .sheet(isPresented: $showDayHabits) {
+                if let selectedDate = selectedDate {
+                    DayHabitsSheet(
+                        date: selectedDate,
+                        habits: habits
+                    )
+                    .presentationDetents([.large])
                 }
             }
         }
@@ -97,14 +109,22 @@ struct MonthlyCalendarView: View {
             
             // Calendar days
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
-                ForEach(daysInMonth, id: \.self) { date in
+                ForEach(Array(daysInMonth.enumerated()), id: \.offset) { index, date in
                     if let date = date {
-                        DayCell(
-                            date: date,
-                            isCompleted: isDateCompleted(date),
-                            isToday: calendar.isDateInToday(date),
-                            isFuture: date > Date()
-                        )
+                        Button {
+                            if date <= Date() {
+                                selectedDate = date
+                                showDayHabits = true
+                            }
+                        } label: {
+                            DayCell(
+                                date: date,
+                                isCompleted: isDateCompleted(date),
+                                isToday: calendar.isDateInToday(date),
+                                isFuture: date > Date()
+                            )
+                        }
+                        .disabled(date > Date())
                     } else {
                         Color.clear
                             .frame(height: 44)
@@ -184,8 +204,9 @@ struct MonthlyCalendarView: View {
         
         var days: [Date?] = Array(repeating: nil, count: adjustedFirstWeekday)
         
-        for day in 1...numberOfDays {
-            if let date = calendar.date(bySetting: .day, value: day, of: selectedMonth) {
+        // Use monthInterval.start and add days to get correct dates
+        for dayIndex in 0..<numberOfDays {
+            if let date = calendar.date(byAdding: .day, value: dayIndex, to: monthInterval.start) {
                 days.append(date)
             }
         }
@@ -266,11 +287,14 @@ extension Date {
 }
 
 #Preview {
-    MonthlyCalendarView(completedDates: Set([
-        "2026-04-15",
-        "2026-04-16",
-        "2026-04-17",
-        "2026-04-14",
-        "2026-04-10"
-    ]))
+    MonthlyCalendarView(
+        completedDates: Set([
+            "2026-04-15",
+            "2026-04-16",
+            "2026-04-17",
+            "2026-04-14",
+            "2026-04-10"
+        ]),
+        habits: []
+    )
 }
