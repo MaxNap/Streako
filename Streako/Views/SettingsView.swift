@@ -83,35 +83,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Test Data Generator (for development/testing only)
-                #if DEBUG
-                NavigationLink {
-                    TestDataView()
-                        .environmentObject(habitsViewModel)
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("🧪 Test Data Generator")
-                                .foregroundColor(.white)
-                                .font(.headline)
-                            
-                            Text("Populate app with sample data")
-                                .foregroundColor(.gray)
-                                .font(.subheadline)
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "flask.fill")
-                            .font(.title2)
-                            .foregroundColor(.purple)
-                    }
-                    .padding()
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                }
-                #endif
-                
+
                 if let user = authViewModel.user {
                     Text(user.email)
                         .foregroundColor(.gray)

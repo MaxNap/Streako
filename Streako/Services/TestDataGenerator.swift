@@ -25,13 +25,16 @@ final class TestDataGenerator {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date()) // Use start of day for consistency
         
-        // Create 5 realistic habits
-        let habitsData: [(name: String, icon: String, color: String, completionPattern: [Bool])] = [
-            ("Morning Exercise", "figure.walk", "FF9500", [true, true, true, true, true, true, true]), // Perfect week
-            ("Read Book", "book.fill", "34C759", [true, true, false, true, true, true, true]), // Missed day 3
-            ("Meditation", "bolt.fill", "AF52DE", [false, false, true, true, true, true, true]), // Strong finish
-            ("Drink Water", "drop.fill", "007AFF", [true, false, true, false, true, false, true]), // Scattered
-            ("Journal", "heart.fill", "FF3B30", [false, false, false, false, false, true, true]) // Recent start
+        // Generate full month of data for perfect screenshots (all days completed)
+        let daysInMonth = calendar.component(.day, from: today) // Days from start of month to today
+        
+        // Create 5 realistic habits - ALL COMPLETED for perfect App Store screenshots
+        let habitsData: [(name: String, icon: String, color: String)] = [
+            ("Morning Exercise", "figure.walk", "FF9500"),
+            ("Read Book", "book.fill", "34C759"),
+            ("Meditation", "bolt.fill", "AF52DE"),
+            ("Drink Water", "drop.fill", "007AFF"),
+            ("Journal", "heart.fill", "FF3B30")
         ]
         
         let group = DispatchGroup()
@@ -40,37 +43,26 @@ final class TestDataGenerator {
         for habitData in habitsData {
             group.enter()
             
-            // Calculate streak and completion dates
+            // Calculate streak and completion dates for entire month
             var completedDates: [String] = []
-            var currentStreak = 0
-            var bestStreak = 0
-            var tempStreak = 0
             
-            // Go through the week (7 days ago to today)
-            for dayOffset in (0..<7).reversed() {
+            // Complete ALL days from start of month to today
+            for dayOffset in (0..<daysInMonth).reversed() {
                 let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
-                let isCompleted = habitData.completionPattern[6 - dayOffset]
-                
-                if isCompleted {
-                    let dateStr = Habit.dateString(from: date)
-                    completedDates.append(dateStr)
-                    tempStreak += 1
-                    bestStreak = max(bestStreak, tempStreak)
-                    
-                    // If this is today or continues to today, it's current streak
-                    if dayOffset == 0 {
-                        currentStreak = tempStreak
-                    }
-                } else {
-                    tempStreak = 0
-                }
+                let dateStr = Habit.dateString(from: date)
+                completedDates.append(dateStr)
             }
             
-            // Last completed date (if today is completed)
-            let lastCompletedDate = habitData.completionPattern.last == true ? Habit.dateString(from: today) : nil
+            // Perfect streak = number of days in month so far
+            let currentStreak = daysInMonth
+            let bestStreak = daysInMonth
             
-            // Habit creation date is 6 days ago
-            let createdAtDate = calendar.date(byAdding: .day, value: -6, to: today)!
+            // Last completed date is today
+            let lastCompletedDate = Habit.dateString(from: today)
+            
+            // Habit creation date is at the start of the month
+            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today))!
+            let createdAtDate = startOfMonth
             
             // Create habit document
             let habitRef = db.collection("users").document(userId).collection("habits").document()

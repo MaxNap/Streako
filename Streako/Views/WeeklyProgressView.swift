@@ -31,7 +31,7 @@ struct WeeklyProgressView: View {
                         
                         // Circle indicator
                         Button {
-                            if !day.isFuture && day.isCompleted {
+                            if !day.isFuture {
                                 selectedDay = day
                                 showDayHabits = true
                             }
@@ -65,7 +65,7 @@ struct WeeklyProgressView: View {
                                 }
                             }
                         }
-                        .disabled(!day.isCompleted || day.isFuture)
+                        .disabled(day.isFuture)
                     }
                     .frame(maxWidth: .infinity)
                 }
